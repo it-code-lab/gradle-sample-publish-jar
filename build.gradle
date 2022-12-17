@@ -1,0 +1,57 @@
+apply plugin : "application"
+apply plugin: "maven-publish"
+group 'com.sample'
+version '1.0.0'
+
+repositories {
+    // Define where the dependencies are to be looked for
+    mavenCentral()
+}
+
+dependencies {
+    //Jars the application is dependent on
+    implementation "joda-time:joda-time:2.12.2"
+}
+
+jar {
+    archivesBaseName = 'sampleapp'
+    enabled = true
+    manifest {
+        attributes(
+                "Implementation-Title": project.name,
+                "Implementation-Version": project.version,
+                "Implementation-Timestamp": new Date(),
+                "Main-Class": "com.sample.publish.Hello"
+        )
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+publishing {
+
+    repositories {
+        maven {
+            def releasesRepoUrl = "http://localhost:8081/repository/maven-releases/"
+            def snapshotsRepoUrl = "http://localhost:8081/repository/maven-snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl :  releasesRepoUrl
+
+            //because we are using http connection to local nexus repo
+            allowInsecureProtocol = true
+
+            credentials {
+                username = nexusLocalUsername
+                password = nexusLocalPassword
+            }
+        }
+    }
+    publications {
+        maven(MavenPublication) {
+            artifact ("build/libs/sampleapp-$version" + ".jar"){
+                extension  'jar'
+            }
+        }
+    }
+}
